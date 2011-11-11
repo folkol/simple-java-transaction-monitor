@@ -67,7 +67,7 @@ public class LoggerAgent implements ClassFileTransformer {
                 b = cl.toBytecode();
             }
         } catch (Exception e) {
-            System.err.println("Could not instrument  " + name + ",  exception : " + e.getMessage());
+//            System.err.println("Could not instrument  " + name + ",  exception : " + e.getMessage());
         } finally {
             if (cl != null) {
                 cl.detach();
@@ -79,8 +79,8 @@ public class LoggerAgent implements ClassFileTransformer {
     private void doMethod(CtBehavior method) throws NotFoundException, CannotCompileException {
         String signature = getSignature(method);
         String returnValue = returnValue(method);
-        method.insertBefore(ifLog + "_log.info(\">> " + signature + ");");
-        method.insertAfter(ifLog + "_log.info(\"<< " + signature + returnValue + ");");
+        method.insertBefore(ifLog + "_log.info(\"HACKATHON entering " + method.getDeclaringClass().getSimpleName() + " " + signature + ");");
+        method.insertAfter(ifLog + "_log.info(\"HACKATHON exiting "  + method.getDeclaringClass().getSimpleName() + " " + signature + returnValue + ");");
     }
 
     static String returnValue(CtBehavior method) throws NotFoundException {
