@@ -1,4 +1,4 @@
-package com.runjva.instrumentation;
+package com.folkol.instrumentation;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
@@ -38,21 +38,18 @@ public class LoggerAgent implements ClassFileTransformer {
 
     String def = "private static java.util.logging.Logger _log;";
     String ifLog = "if (_log.isLoggable(java.util.logging.Level.INFO))";
-    String[] ignore = new String[] { "sun/", "java/", "javax/" };
-    String[] notignore = new String[] { "com/polopoly" };
+    String notignore = "com/polopoly";
 
-    public byte[] transform(ClassLoader loader, String className, Class<?> clazz, java.security.ProtectionDomain domain, byte[] bytes) {
-        for (int i = 0; i < notignore.length; i++) {
-            if (className.startsWith(notignore[i])) {
-                return doClass(className, clazz, bytes);
-            }
+    public byte[] transform(ClassLoader loader, String klassNamn, Class<?> klasse, java.security.ProtectionDomain domain, byte[] classFileData) {
+        if (klassNamn.startsWith(notignore)) {
+            return pyntaKlassen(klassNamn, klasse, classFileData);
         }
         return null;
     }
 
     // Note: The logger variable has been named _log. In a production version an
     // unused variable name should be found and used.
-    private byte[] doClass(String name, Class<?> clazz, byte[] b) {
+    private byte[] pyntaKlassen(String name, Class<?> clazz, byte[] b) {
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
         try {
