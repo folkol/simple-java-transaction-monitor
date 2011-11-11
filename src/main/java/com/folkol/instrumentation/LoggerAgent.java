@@ -53,7 +53,6 @@ public class LoggerAgent implements ClassFileTransformer {
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
         try {
-            System.out.println("REWRITING CALSS!!!!");
             cl = pool.makeClass(new java.io.ByteArrayInputStream(b));
             if (cl.isInterface() == false) {
                 CtField field = CtField.make(def, cl);
