@@ -2,10 +2,6 @@ package com.folkol.instrumentation;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 import javassist.CannotCompileException;
 import javassist.ClassPool;
@@ -20,35 +16,25 @@ import javassist.bytecode.CodeAttribute;
 import javassist.bytecode.LocalVariableAttribute;
 
 public class LoggerAgent implements ClassFileTransformer {
+    private String pattern;
+    public LoggerAgent(String agentArgument) {
+        pattern = agentArgument != null ? agentArgument : "com/folkol";
+    }
+
     public static void premain(String agentArgument, Instrumentation instrumentation) {
-        if (agentArgument != null) {
-            String[] args = agentArgument.split(",");
-            Set<String> argSet = new HashSet<String>(Arrays.asList(args));
-            if (argSet.contains("time")) {
-                System.out.println("Start at " + new Date());
-                Runtime.getRuntime().addShutdownHook(new Thread() {
-                    public void run() {
-                        System.out.println("Stop at " + new Date());
-                    }
-                });
-            }
-        }
-        instrumentation.addTransformer(new LoggerAgent());
+        instrumentation.addTransformer(new LoggerAgent(agentArgument));
     }
 
     String def = "private static java.util.logging.Logger _log;";
     String ifLog = "if (_log.isLoggable(java.util.logging.Level.INFO))";
-    String notignore = "com/polopoly";
 
     public byte[] transform(ClassLoader loader, String klassNamn, Class<?> klasse, java.security.ProtectionDomain domain, byte[] classFileData) {
-        if (klassNamn.startsWith(notignore)) {
+        if (klassNamn.startsWith(pattern)) {
             return pyntaKlassen(klassNamn, klasse, classFileData);
         }
         return null;
     }
 
-    // Note: The logger variable has been named _log. In a production version an
-    // unused variable name should be found and used.
     private byte[] pyntaKlassen(String name, Class<?> clazz, byte[] b) {
         ClassPool pool = ClassPool.getDefault();
         CtClass cl = null;
@@ -61,13 +47,12 @@ public class LoggerAgent implements ClassFileTransformer {
                 CtBehavior[] methods = cl.getDeclaredBehaviors();
                 for (int i = 0; i < methods.length; i++) {
                     if (methods[i].isEmpty() == false) {
-                        doMethod(methods[i]);
+                        pyntaMetod(methods[i]);
                     }
                 }
                 b = cl.toBytecode();
             }
         } catch (Exception e) {
-//            System.err.println("Could not instrument  " + name + ",  exception : " + e.getMessage());
         } finally {
             if (cl != null) {
                 cl.detach();
@@ -76,7 +61,7 @@ public class LoggerAgent implements ClassFileTransformer {
         return b;
     }
 
-    private void doMethod(CtBehavior method) throws NotFoundException, CannotCompileException {
+    private void pyntaMetod(CtBehavior method) throws NotFoundException, CannotCompileException {
         String signature = getSignature(method);
         String returnValue = returnValue(method);
         method.insertBefore(ifLog + "_log.info(\"HACKATHON entering " + method.getDeclaringClass().getSimpleName() + " " + signature + ");");
@@ -115,7 +100,6 @@ public class LoggerAgent implements ClassFileTransformer {
             sb.append(" + \"");
             sb.append(parameterNameFor(method, locals, i));
             sb.append("\" + \"=");
-            // use Arrays.asList() to render array of objects.
             if (arrayOf != null && !arrayOf.isPrimitive()) {
                 sb.append("\"+ java.util.Arrays.asList($" + (i + 1) + ")");
             } else {
@@ -134,7 +118,6 @@ public class LoggerAgent implements ClassFileTransformer {
         if (Modifier.isStatic(method.getModifiers())) {
             return locals.variableName(i);
         }
-        // skip #0 which is reference to "this"
         return locals.variableName(i + 1);
     }
 }
